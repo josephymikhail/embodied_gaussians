@@ -44,7 +44,7 @@ open3d = "*"
 cuda = "12.4.*"
 cuda-version = "<=12.4"
 glfw = "*"
-pip = ">=24.3.1,<25"
+pip = ">=25.0.1,<26"
 libxcrypt = "*"
 eigen = "*"
 pybind11 = "*"
@@ -54,8 +54,7 @@ pyrealsense2 = ">=2.54.2,<3"
 embodied_gaussians = { path = ".", editable = true }
 
 [tool.pixi.tasks]
-find_ground = "python scripts/find_ground.py"
-build_pyreduce = "cd dependencies/pysegreduce && cmake -B build . && cmake --install build --prefix $CONDA_PREFIX"
+build_pyreduce = "pip install git+https://github.com/jc211/pysegreduce.git"
 build_gsplat = "pip install git+https://github.com/nerfstudio-project/gsplat.git"
 build = {depends-on=["build_pyreduce", "build_gsplat"]}
 demo = "python examples/example_embodied_pusht_offline.py"
