@@ -128,9 +128,9 @@ class Saver:
             self.state_joint_qd.zero_()
             self.control_joint_act.zero_()
 
-    def record_state_and_control(self):
+    def record_state_and_control(self, time: float):
         self._record_state_and_control(
-            self.simulator.sim_time, self.simulator.state_0, self.simulator.control
+            time, self.simulator.state_0, self.simulator.control
         )
 
     def _record_state_and_control(
