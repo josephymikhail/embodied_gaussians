@@ -11,14 +11,12 @@ dependencies=[
     "torchvision",
     "tqdm", 
     "zarr>=3.0.4,<3.1",
-    "pyopengl",
-    "pyglet==2.0.21",
     "trio",
     "trio-util",
     "opencv-python>=4.11.0.86,<5", 
     "marsoom @ git+https://github.com/jc211/marsoom.git",
 
-    "torchcodec@https://download.pytorch.org/whl/cu124/TorchCodec-0.1.1%2Bcu124-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "torchcodec@https://download.pytorch.org/whl/cu124/TorchCodec-0.1.1%2Bcu124-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", # TODO: Make this not a wheel
     "realsense @ git+https://github.com/jc211/realsense.git",
 
     "isegm @ git+https://github.com/jc211/ritm_interactive_segmentation", 

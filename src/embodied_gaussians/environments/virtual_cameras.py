@@ -169,6 +169,12 @@ def update_poses_kernel(
         wp.vec4f(0.0, -1.0, 0.0, 0.0),
         wp.vec4f(0.0, 0.0, -1.0, 0.0),
         wp.vec4f(0.0, 0.0, 0.0, 1.0),
-    )
+    ) 
+    # X_BLENDER_TO_OPENCV = wp.mat44(
+    #     1.0, 0.0, 0.0, 0.0,
+    #     0.0, -1.0, 0.0, 0.0,
+    #     0.0, 0.0, -1.0, 0.0,
+    #     0.0, 0.0, 0.0, 1.0,
+    # )
     X_WCs[env_id, tid] = X_WC
     X_CWs_opencv[env_id, tid] = wp.mul(X_BLENDER_TO_OPENCV, X_CW)
