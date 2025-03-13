@@ -9,11 +9,11 @@ from embodied_gaussians.scene_builders.domain import MaskedPosedImageAndDepth
 
 @dataclass
 class GroundFinderSettings:
-    points_per_cm: float = 1.0
+    points_per_cm: float = 0.8
     xmin: float = -0.9
     xmax: float = 0.9
-    ymin: float = -1.2
-    ymax: float = 1.2
+    ymin: float = -1.0
+    ymax: float = 1.0
 
     plane_segment_distance_threshold: float = 0.01
     plane_segment_ransac_n: int = 3

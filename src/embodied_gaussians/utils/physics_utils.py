@@ -1,9 +1,18 @@
 import dataclasses
+import pickle
+from pathlib import Path
 
 import numpy as np
 import warp as wp
 import warp.sim
 
+
+def save_builder(path: Path | str, builder: warp.sim.ModelBuilder):
+    for s in builder.shape_geo_src:
+        if isinstance(s, warp.sim.Mesh) and hasattr(s, "mesh"):
+            del s.mesh  # Cant be pickled and will be rebuilt anyway
+    with open(path, "wb") as file:
+        pickle.dump(builder, file)
 
 def load_mesh(url: str):
     mesh_pts, mesh_indices = warp.sim.load_mesh(url)

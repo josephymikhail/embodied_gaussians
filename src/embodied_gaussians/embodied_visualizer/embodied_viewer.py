@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+from pathlib import Path
 import marsoom
 import marsoom.overlay
 import numpy as np
@@ -9,11 +9,17 @@ import pyglet.gl as gl
 import torch
 import warp as wp
 from imgui_bundle import imgui
+from imgui_bundle import portable_file_dialogs as pfd
+from typing_extensions import override
+from pyglet.math import Vec3 as PyVec3
+
 from marsoom.cuda import EllipseRenderer, InstancedMeshRenderer, VectorRenderer
 from embodied_gaussians.physics_visualizer.simulation_viewer import SimulationViewer
 
 # from marsoom.cuda.ellipse_renderer_2 import EllipseRenderer as EllipseRenderer2
-from embodied_gaussians.environments.embodied_environment import EmbodiedGaussiansEnvironment
+from embodied_gaussians.environments.embodied_environment import (
+    EmbodiedGaussiansEnvironment,
+)
 
 
 @dataclass
@@ -57,6 +63,7 @@ class EmbodiedViewer(SimulationViewer):
         self.env: EmbodiedGaussiansEnvironment | None = None
         self.cameras: dict[str, marsoom.CameraWireframeWithImage] = {}
         self.virtual_cameras: dict[str, marsoom.CameraWireframeWithImage] = {}
+        self.save_dialog: pfd.save_file | None = None
 
     def set_environment(self, env: EmbodiedGaussiansEnvironment):
         self.env = env
@@ -69,63 +76,77 @@ class EmbodiedViewer(SimulationViewer):
 
         imgui.begin("Controls", flags=imgui.WindowFlags_.no_collapse)
         s = self.settings
-        
+
         # Style setup
         imgui.push_style_var(imgui.StyleVar_.frame_padding, (4, 3))
         imgui.push_style_var(imgui.StyleVar_.item_spacing, (4, 4))
-        
+
         # Display Settings
         imgui.text("Display Settings")
         imgui.separator()
-        
-        _, s.draw_gaussian_meshes = imgui.checkbox("Gaussian Meshes", s.draw_gaussian_meshes)
+
+        _, s.draw_gaussian_meshes = imgui.checkbox(
+            "Gaussian Meshes", s.draw_gaussian_meshes
+        )
         if imgui.is_item_hovered():
             imgui.set_tooltip("Display 3D mesh representation of gaussians")
-        
-        _, s.draw_gaussian_outlines = imgui.checkbox("Gaussian Outlines", s.draw_gaussian_outlines)
+
+        _, s.draw_gaussian_outlines = imgui.checkbox(
+            "Gaussian Outlines", s.draw_gaussian_outlines
+        )
         if imgui.is_item_hovered():
             imgui.set_tooltip("Show 2D projections of gaussians")
-        
-        _, s.draw_gaussian_render = imgui.checkbox("Gaussian Render", s.draw_gaussian_render)
+
+        _, s.draw_gaussian_render = imgui.checkbox(
+            "Gaussian Render", s.draw_gaussian_render
+        )
         if imgui.is_item_hovered():
             imgui.set_tooltip("Render full gaussian visualization")
-        
+
         _, s.draw_physics = imgui.checkbox("Show Physics", s.draw_physics)
         if imgui.is_item_hovered():
             imgui.set_tooltip("Display physics simulation elements")
-        
+
         _, s.draw_cameras = imgui.checkbox("Show Cameras", s.draw_cameras)
-        _, s.draw_virtual_cameras = imgui.checkbox("Show Virtual Cameras", s.draw_virtual_cameras)
-        
+        _, s.draw_virtual_cameras = imgui.checkbox(
+            "Show Virtual Cameras", s.draw_virtual_cameras
+        )
+
         imgui.spacing()
         imgui.spacing()
-        
+
         # Visual Forces
         imgui.text("Visual Forces")
         imgui.separator()
-        
+
         _, s.draw_visual_forces = imgui.checkbox("Show Forces", s.draw_visual_forces)
-        _, s.draw_visual_forces_gaussians_outlines = imgui.checkbox("Force Gaussian Outlines", s.draw_visual_forces_gaussians_outlines)
-        _, s.draw_visual_forces_gaussians_meshes = imgui.checkbox("Force Gaussian Meshes", s.draw_visual_forces_gaussians_meshes)
-        _, s.visual_forces_scale = imgui.slider_float("Force Scale", s.visual_forces_scale, 0.0, 1.0)
+        _, s.draw_visual_forces_gaussians_outlines = imgui.checkbox(
+            "Force Gaussian Outlines", s.draw_visual_forces_gaussians_outlines
+        )
+        _, s.draw_visual_forces_gaussians_meshes = imgui.checkbox(
+            "Force Gaussian Meshes", s.draw_visual_forces_gaussians_meshes
+        )
+        _, s.visual_forces_scale = imgui.slider_float(
+            "Force Scale", s.visual_forces_scale, 0.0, 1.0
+        )
         if imgui.is_item_hovered():
             imgui.set_tooltip("Adjust the scale of force visualization")
-        
+
         imgui.spacing()
         imgui.spacing()
-        
+
         # View Settings
         imgui.text("View Settings")
         imgui.separator()
-        
+
         _, s.near_plane = imgui.slider_float("Near Plane", s.near_plane, 0.001, 0.3)
         if imgui.is_item_hovered():
             imgui.set_tooltip("Distance to near clipping plane")
-        
+
         _, s.far_plane = imgui.slider_float("Far Plane", s.far_plane, 0.2, 30.0)
         if imgui.is_item_hovered():
             imgui.set_tooltip("Distance to far clipping plane")
-        
+
         # Camera Controls
         frames = self.env.frames
         if frames is not None:
@@ -133,21 +154,15 @@ class EmbodiedViewer(SimulationViewer):
             imgui.spacing()
             imgui.text("Camera Controls")
             imgui.separator()
-            
+
             num_cameras = len(frames.names)
-            c, self.last_selected_camera = imgui.slider_int(
-                "Camera Index", self.last_selected_camera, 0, num_cameras - 1
-            )
-            if c:
-                self.go_to_camera(self.last_selected_camera)
-                
             c, s.wireframe_alpha = imgui.slider_float(
                 "Wireframe Opacity", s.wireframe_alpha, 0.0, 1.0
             )
             if c:
                 for camera in self.cameras.values():
                     camera.alpha = s.wireframe_alpha
-                
+
             c, s.wireframe_z_offset = imgui.slider_float(
                 "Wireframe Offset", s.wireframe_z_offset, 0.0, 1.0
             )
@@ -155,19 +170,52 @@ class EmbodiedViewer(SimulationViewer):
                 for camera in self.cameras.values():
                     camera.update_z_offset(s.wireframe_z_offset)
 
+            c, self.last_selected_camera = imgui.slider_int(
+                "Camera Index", self.last_selected_camera, 0, num_cameras - 1
+            )
+
+            imgui.push_style_var(imgui.StyleVar_.frame_padding, (8, 4))
+            imgui.push_style_var(imgui.StyleVar_.button_text_align, (0.5, 0.5))
+
+            imgui.push_style_color(imgui.Col_.button, (0.2, 0.5, 0.8, 0.8))
+            imgui.push_style_color(imgui.Col_.button_hovered, (0.3, 0.6, 0.9, 1.0))
+            imgui.push_style_color(imgui.Col_.button_active, (0.1, 0.4, 0.7, 1.0))
+            if imgui.button("Go##goto", (120, 30)):
+                self.go_to_camera(self.last_selected_camera)
+            imgui.pop_style_color(3)
+
+            imgui.same_line(spacing=10)
+
+            imgui.push_style_color(imgui.Col_.button, (0.8, 0.3, 0.3, 0.8))
+            imgui.push_style_color(imgui.Col_.button_hovered, (0.9, 0.4, 0.4, 1.0))
+            imgui.push_style_color(imgui.Col_.button_active, (0.7, 0.2, 0.2, 1.0))
+            if imgui.button("Reset##reset", (120, 30)):
+                self.reset_view()
+            imgui.pop_style_color(3)
+
+            imgui.pop_style_var(2)
+
         # Visual Forces Parameters
         imgui.spacing()
         imgui.spacing()
         imgui.text("Visual Forces Parameters")
         imgui.separator()
-        
+
         vs = self.env.visual_forces_settings
         _, vs.kp = imgui.slider_float("Proportional Gain", vs.kp, 0.0, 1.0)
         _, vs.lr_means = imgui.slider_float("Mean Learning Rate", vs.lr_means, 0.0, 0.1)
-        _, vs.lr_quats = imgui.slider_float("Rotation Learning Rate", vs.lr_quats, 0.0, 0.1)
-        _, vs.lr_color = imgui.slider_float("Color Learning Rate", vs.lr_color, 0.0, 0.1)
-        _, vs.lr_opacity = imgui.slider_float("Opacity Learning Rate", vs.lr_opacity, 0.0, 0.1)
-        _, vs.lr_scale = imgui.slider_float("Scale Learning Rate", vs.lr_scale, 0.0, 0.1)
+        _, vs.lr_quats = imgui.slider_float(
+            "Rotation Learning Rate", vs.lr_quats, 0.0, 0.1
+        )
+        _, vs.lr_color = imgui.slider_float(
+            "Color Learning Rate", vs.lr_color, 0.0, 0.1
+        )
+        _, vs.lr_opacity = imgui.slider_float(
+            "Opacity Learning Rate", vs.lr_opacity, 0.0, 0.1
+        )
+        _, vs.lr_scale = imgui.slider_float(
+            "Scale Learning Rate", vs.lr_scale, 0.0, 0.1
+        )
         _, vs.iterations = imgui.slider_int("Iteration Count", vs.iterations, 0, 10)
 
         # Physics Parameters
@@ -175,10 +223,12 @@ class EmbodiedViewer(SimulationViewer):
         imgui.spacing()
         imgui.text("Physics Parameters")
         imgui.separator()
-        
+
         ps = self.env.physics_settings
         imgui.text(f"Simulation Rate: {round(1.0 / ps.dt)} Hz")
-        _, ps.xpbd_iterations = imgui.slider_int("XPBD Iterations", ps.xpbd_iterations, 1, 100)
+        _, ps.xpbd_iterations = imgui.slider_int(
+            "XPBD Iterations", ps.xpbd_iterations, 1, 100
+        )
         if imgui.is_item_hovered():
             imgui.set_tooltip("Number of position-based dynamics iterations")
         _, ps.substeps = imgui.slider_int("Physics Substeps", ps.substeps, 2, 100)
@@ -186,7 +236,40 @@ class EmbodiedViewer(SimulationViewer):
             imgui.set_tooltip("Number of physics simulation steps per frame")
 
         imgui.pop_style_var(2)
+
+        imgui.spacing()
+        imgui.text("Scene Settings")
+        imgui.separator()
+
+        imgui.push_style_var(imgui.StyleVar_.frame_padding, (8, 4))
+        imgui.push_style_var(imgui.StyleVar_.button_text_align, (0.5, 0.5))
+
+        imgui.push_style_color(imgui.Col_.button, (0.2, 0.5, 0.8, 0.8))
+        imgui.push_style_color(imgui.Col_.button_hovered, (0.3, 0.6, 0.9, 1.0))
+        imgui.push_style_color(imgui.Col_.button_active, (0.1, 0.4, 0.7, 1.0))
+
+        if imgui.button("Save Scene", (120, 30)) and self.env is not None:
+            self.save_dialog = pfd.save_file("Save Scene")
+        imgui.pop_style_var(2)
+        imgui.pop_style_color(3)
+
+        if self.save_dialog is not None and self.save_dialog.ready():
+            result = self.save_dialog.result()
+            if result:
+                result = Path(result)
+                self.env.save_builder(result)
+            self.save_dialog = None
+
         imgui.end()
+
+    @override
+    def reset_camera(self):
+        self._camera_pos = PyVec3(0.0, -0.8, 0.4)
+        self._camera_front = PyVec3(0.0, 1.0, 0.0)
+        self._camera_up = PyVec3(0.0, 0.0, 1.0)
+        self._render_new_frame = True
+        self.update_view_matrix()
+        self.update_projection_matrix()
 
     def reset_cameras(self):
         for cam in self.cameras.values():

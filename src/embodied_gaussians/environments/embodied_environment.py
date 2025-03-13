@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 import torch
@@ -23,6 +24,8 @@ from embodied_gaussians.embodied_simulator.gaussians import GaussianModel, Gauss
 from embodied_gaussians.environments.environment import (
     EnvironmentActions,
 )
+from embodied_gaussians.utils.physics_utils import save_builder
+
 
 @dataclass
 class EmbodiedGaussiansObservations(EnvironmentObservations):
@@ -127,6 +130,9 @@ class EmbodiedGaussiansEnvironment(Environment):
 
     def set_frames(self, frames: Frames):
         self.frames = frames
+
+    def save_builder(self, path: Path):
+        save_builder(path, self.sim.builder)
 
     def render_virtual_cameras(self, force: bool = False):
         if self.virtual_cameras is None:

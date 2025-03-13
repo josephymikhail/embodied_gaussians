@@ -8,16 +8,9 @@ import warp as wp
 import warp.sim
 import zarr
 
-from embodied_gaussians.physics_simulator.builder import ModelBuilder
 from embodied_gaussians.physics_simulator.simulator import Simulator
+from embodied_gaussians.utils.physics_utils import save_builder
 
-
-def save_builder(path: Path | str, builder: ModelBuilder):
-    for s in builder.shape_geo_src:
-        if isinstance(s, warp.sim.Mesh) and hasattr(s, "mesh"):
-            del s.mesh  # Cant be pickled and will be rebuilt anyway
-    with open(path, "wb") as file:
-        pickle.dump(builder, file)
 
 
 class Saver:
