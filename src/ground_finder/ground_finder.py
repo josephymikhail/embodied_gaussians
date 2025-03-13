@@ -4,7 +4,7 @@ import typing
 import numpy as np
 
 import open3d as o3d
-from embodied_gaussians.body_builders.domain import MaskedPosedImageAndDepth
+from embodied_gaussians.scene_builders.domain import MaskedPosedImageAndDepth
 
 
 @dataclass

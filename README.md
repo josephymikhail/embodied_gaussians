@@ -55,24 +55,56 @@ pixi r demo
 ```
 
 
-### Scene Building
-To generate an embodied gaussian representation of an object:
+## Scene Building
+
+These scripts require Realsense cameras directly connected to your device. Note: Offline image processing is not currently supported.
+
+### 1. Ground Plane Detection
+First, detect the ground plane by running:
+```bash
+python scripts/find_ground.py temp/ground_plane.json --extrinsics scripts/example_extrinsics.json --visualize
+```
+You will be prompted to segment the ground in the interface. The script will then calculate the ground points and plane parameters.
+
+<div align="left">
+    <img src="static/ground_detection_example.png" alt="Ground Detection" width="320">
+</div>
+
+### 2. Generate Ground Gaussians
+Convert the detected ground plane into Gaussian representations:
+```bash
+python scripts/build_body_from_pointcloud.py temp/ground_body.json --extrinsics scripts/example_extrinsics.json --points scripts/example_ground_plane.npy --visualize
+```
+
+### 3. Object Generation
+Generate embodied Gaussian representations of objects using multiple viewpoints (more viewpoints yield better results):
 
 1. Run the scene building script:
 ```bash
 python scripts/build_simple_body.py objects/tblock.json \
-    --extrinsics examples/embodied_environments/pusht_embodied/environment/sheep.json \
-    --cameras "220422302296" "234222302164" "234222303707" \
+    --extrinsics scripts/example_extrinsics.json \
+    --ground scripts/example_ground_plane.json \
     --visualize
 ```
 
-2. For each camera viewpoint, a segmentation GUI will appear. Click on the object you wish to model until satisfied with the selection, then press `Escape`. Repeat this process for all viewpoints.
+2. For each camera viewpoint:
+   - A segmentation GUI will appear
+   - Click to select the target object
+   - Press `Escape` when satisfied with the selection
+   - Repeat for all viewpoints
 
-3. The script will generate a JSON file containing the particle and gaussian representations of your object.
+3. The script will generate a JSON file containing both particle and Gaussian representations of your object.
 
 <div align="left">
     <img src="static/scene_builder_segmentation.png" alt="Segmentation Window" width="640">
 </div>
+
+You can visualize the object with
+```bash
+python scripts/visualize_object.py scripts/example_object.json
+```
+
+
 
 ## Citation
 

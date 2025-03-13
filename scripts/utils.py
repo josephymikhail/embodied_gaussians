@@ -7,7 +7,6 @@ from embodied_gaussians.utils.utils import ExtrinsicsData
 
 def get_datapoints_from_live_cameras(
     extrinsics: dict[str, ExtrinsicsData],
-    serial_numbers: list[str] | None = None,
     segmentor: typing.Literal["sam", "quick"] = "quick",
 ) -> list[MaskedPosedImageAndDepth]:
     if segmentor == "quick":
@@ -22,6 +21,7 @@ def get_datapoints_from_live_cameras(
         raise ValueError(f"Unknown segmentor {segmentor}")
 
     datapoints = []
+    serial_numbers = list(extrinsics.keys())
     with MultiRealsense(serial_numbers=serial_numbers, enable_depth=True) as realsenses:
         realsenses.set_exposure(177, 70)
         realsenses.set_white_balance(4600)
@@ -31,6 +31,9 @@ def get_datapoints_from_live_cameras(
         all_depth_scale = realsenses.get_depth_scale()
 
         for serial, camera_data in all_camera_data.items():
+            if serial not in extrinsics:
+                print(f"Camera {serial} is not known. Skipping.")
+                continue
             K = all_intrinsics[serial]
             depth_scale = all_depth_scale[serial]
             color = camera_data["color"]

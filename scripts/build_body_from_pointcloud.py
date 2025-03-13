@@ -4,7 +4,11 @@ import numpy as np
 
 import tyro
 
-from embodied_gaussians.scene_builders.domain import save_posed_images, load_posed_images, GaussianLearningRates
+from embodied_gaussians.scene_builders.domain import (
+    save_posed_images,
+    load_posed_images,
+    GaussianLearningRates,
+)
 from embodied_gaussians.scene_builders.pointcloud_body_builder import (
     PointCloudBodyBuilder,
     PointCloudBodyBuilderSettings,
@@ -15,26 +19,27 @@ from utils import get_datapoints_from_live_cameras
 
 @dataclass
 class Params:
-    save_path: Path
+    save_path: tyro.conf.PositionalRequiredArgs[Path]
     extrinsics: Path
     points: Path
     """
-    Path to a numpy file containing a 3xN array of points
+    Path to a numpy file containing a Nx3 array of points
     """
-    max_depth: float = 2.0
     visualize: bool = False
     offline: bool = False
     save_posed_images: bool = True
-    builder: PointCloudBodyBuilderSettings = field(default_factory=PointCloudBodyBuilderSettings(
-        training_learning_rates=GaussianLearningRates(
-            colors=0.1,
-            means=0.0,
-            scales=0.004,
-            quats=0.0,
-        ),
-        min_scale=0.0,
-        max_scale=0.03,
-    ))
+    builder: PointCloudBodyBuilderSettings = field(
+        default_factory=lambda: PointCloudBodyBuilderSettings(
+            training_learning_rates=GaussianLearningRates(
+                colors=0.1,
+                means=0.0,
+                scales=0.004,
+                quats=0.0,
+            ),
+            min_scale=(0.0, 0.0, 0.0),
+            max_scale=(0.03, 0.03, 0.03)
+        )
+    )
 
 
 def main(params: Params):
@@ -49,14 +54,17 @@ def main(params: Params):
 
     extrinsics = read_extrinsics(params.extrinsics)
     points = np.load(params.points)
-    serials = ["220422302296", "234222302164", "234222303707"]
     if not params.offline:
-        datapoints = get_datapoints_from_live_cameras(extrinsics, serial_numbers=serials)
+        datapoints = get_datapoints_from_live_cameras(extrinsics)
         if params.save_posed_images:
-            save_posed_images(f"data/posed_images/{params.name}.npz", datapoints)
+            save_posed_images(
+                f"temp/posed_images/{params.save_path.stem}.npz", datapoints
+            )
     else:
         try:
-            datapoints = load_posed_images(f"data/posed_images/{params.name}.npz")
+            datapoints = load_posed_images(
+                f"temp/posed_images/{params.save_path.stem}.npz"
+            )
         except FileNotFoundError:
             print("Posed images not found. Run with offline=False to generate them")
             return

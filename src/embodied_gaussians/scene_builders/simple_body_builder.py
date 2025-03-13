@@ -38,7 +38,9 @@ class SimpleBodyBuilderSettings:
     )
 
     training_iterations: int = 1000  # Number of iterations to optimize the particles
-    training_learning_rates: GaussianLearningRates = field(default_factory=lambda: GaussianLearningRates())
+    training_learning_rates: GaussianLearningRates = field(default_factory=lambda: GaussianLearningRates(
+        means=0.0005,
+    ))
     opacity_threshold: float = 0.5  # Opacity threshold for optimization
 
     voxel_size: float = (

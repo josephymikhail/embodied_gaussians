@@ -42,11 +42,6 @@ class Params:
     """
     Save the posed images to a file so that the cameras don't need to be run again.
     """
-    cameras: list[str] | None = None
-    """
-    List of realsense serial numbers to use for building the body.
-    """
-
     builder: SimpleBodyBuilderSettings = field(
         default_factory=SimpleBodyBuilderSettings
     )
@@ -73,7 +68,7 @@ def main(params: Params):
     extrinsics = read_extrinsics(params.extrinsics)
     if not params.offline:
         datapoints = get_datapoints_from_live_cameras(
-            extrinsics, serial_numbers=params.cameras
+            extrinsics
         )
         if params.save_posed_images:
             save_posed_images(f"temp/posed_images/{name}.npz", datapoints)

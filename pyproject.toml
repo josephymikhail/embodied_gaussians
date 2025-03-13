@@ -13,7 +13,7 @@ dependencies=[
     "zarr>=3.0.4,<3.1",
     "trio",
     "trio-util",
-    "opencv-python>=4.11.0.86,<5", 
+    "opencv-python",
     "marsoom @ git+https://github.com/jc211/marsoom.git",
 
     "torchcodec@https://download.pytorch.org/whl/cu124/TorchCodec-0.1.1%2Bcu124-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", # TODO: Make this not a wheel

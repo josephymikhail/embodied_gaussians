@@ -8,7 +8,6 @@ import cv2
 from tqdm import tqdm
 import torch
 import warp as wp
-from scipy.spatial.transform import Rotation as R
 
 from gsplat.rendering import rasterization
 
@@ -20,7 +19,7 @@ from embodied_gaussians.scene_builders.domain import (
     MaskedPosedImageAndDepth,
 )
 
-from .simple_visualizer import ellipsoid_meshes, sphere_meshes
+from .simple_visualizer import ellipsoid_meshes
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +32,12 @@ class PointCloudBodyBuilderSettings:
         default_factory=lambda: GaussianLearningRates()
     )
     opacity_threshold: float = 0.5  # Opacity threshold for optimization
-    min_scale: float = 0.01
-    max_scale: float = 0.03
+    min_scale: tuple[float, float, float] = (0.01, 0.01, 0.01)
+    max_scale: tuple[float, float, float] = (0.03, 0.03, 0.03)
+    max_depth: float = 2.0
+    """
+    If true, the gaussians will be disks. If false, the gaussians will be ellipsoids. This used to make sure the ground is flat.
+    """
 
 
 class PointCloudBodyBuilder:
@@ -63,6 +66,7 @@ class PointCloudBodyBuilder:
             min_scale=settings.min_scale,
             max_scale=settings.max_scale,
             visualize=visualize,
+            max_depth=settings.max_depth,
         )
 
         if visualize:
@@ -88,9 +92,10 @@ class PointCloudBodyBuilder:
         num_iterations: int,
         learning_rates: GaussianLearningRates,
         datapoints: list[MaskedPosedImageAndDepth],
-        min_scale: float,
-        max_scale: float,
+        min_scale: tuple[float, float, float],
+        max_scale: tuple[float, float, float],
         visualize: bool = False,
+        max_depth: float = 2.0,
     ):
         assert initial_points.shape[1] == 3
         params = PointCloudBodyBuilder._create_initial_gaussian_state(initial_points)
@@ -107,17 +112,18 @@ class PointCloudBodyBuilder:
             colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy(),
         )
 
-        if visualize:
-            o3d.visualization.draw_geometries(
-                [
-                    o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
-                    *ellipsoid_meshes(initial_gaussians),
-                ]
-            )
+        # This takes a long time to run because it's a lot of gaussians
+        # if visualize:
+        #     o3d.visualization.draw_geometries(
+        #         [
+        #             o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
+        #             *ellipsoid_meshes(initial_gaussians),
+        #         ]
+        #     )
 
         datapoints = [datapoints[0]]  # , datapoints[1]]#, datapoints[2]]
         gt_data = PointCloudBodyBuilder._get_rasterization_groundtruth(
-            datapoints, max_depth=2.0
+            datapoints, max_depth=max_depth
         )
         if visualize:
             # concat all depth
@@ -143,12 +149,10 @@ class PointCloudBodyBuilder:
             },
         )
         inv_min_scale = GaussianActivations.inv_scale(
-            torch.tensor([min_scale, min_scale, min_scale]).cuda()
-            # torch.tensor([min_scale, min_scale, 0.001]).cuda() # do this for ground to make sure they stay flat
+            torch.tensor(min_scale).cuda()
         )
         inv_max_scale = GaussianActivations.inv_scale(
-            torch.tensor([max_scale, max_scale, max_scale]).cuda()
-            # torch.tensor([max_scale, max_scale, 0.001]).cuda()
+            torch.tensor(max_scale).cuda()
         )
         backgrounds = torch.rand((num_iterations, 3)).float().cuda()
         num_images = gt_data.images.shape[0]
