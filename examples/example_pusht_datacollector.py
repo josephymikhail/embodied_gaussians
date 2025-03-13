@@ -3,8 +3,6 @@ from pathlib import Path
 
 import marsoom
 import marsoom.cuda
-import numpy as np
-import pyglet
 import torch
 import trio
 import tyro
@@ -15,7 +13,8 @@ from trio_util import periodic
 
 from sim_environments.pusht import PushTEnvironment, PushTEnvironmentActions
 from helpers.canvas_2d import Canvas2D
-from embodied_gaussians import PhysicsSettings, SimulationViewer, Saver
+from embodied_gaussians import PhysicsSettings, Saver
+from embodied_gaussians.vis import SimulationViewer
 
 
 @dataclass

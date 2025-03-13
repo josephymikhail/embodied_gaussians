@@ -10,7 +10,8 @@ import warp as wp
 from marsoom import guizmo, imgui
 from trio_util import periodic
 
-from embodied_gaussians import PhysicsSettings, SimulationViewer
+from embodied_gaussians import PhysicsSettings
+from embodied_gaussians.vis import SimulationViewer
 from helpers.canvas_2d import Canvas2D
 from sim_environments.pusht import PushTEnvironment
 

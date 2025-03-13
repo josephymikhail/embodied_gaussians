@@ -11,7 +11,7 @@ from trio_util import periodic
 
 from embodied_gaussians.physics_simulator.loader import Loader
 from sim_environments.pusht import PushTEnvironment
-from embodied_gaussians import SimulationViewer
+from embodied_gaussians.vis import SimulationViewer
 
 @dataclass
 class Settings:

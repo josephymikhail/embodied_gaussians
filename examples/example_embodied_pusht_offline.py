@@ -3,8 +3,9 @@ from pathlib import Path
 import warp as wp
 import torch
 from marsoom import imgui
-from embodied_gaussians import EmbodiedGUI, DatasetManager, EmbodiedGaussiansEnvironment
 from embodied_environments.pusht_embodied.pusht_embodied import build_environment
+from embodied_gaussians import DatasetManager, EmbodiedGaussiansEnvironment
+from embodied_gaussians.vis import EmbodiedGUI  
 
 
 class PlaybackControls:
