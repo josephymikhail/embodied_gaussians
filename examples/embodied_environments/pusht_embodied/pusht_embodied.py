@@ -21,8 +21,8 @@ Q_START = np.array(
     ]
 )
 current_dir = Path(__file__).parent
-GROUND_PATH = current_dir / Path("environment/ground.json")
-EXTRINSICS_PATH = current_dir / Path("environment/sheep.json")
+GROUND_PATH = current_dir / Path("environment/ground_plane.json")
+EXTRINSICS_PATH = current_dir / Path("environment/extrinsics.json")
 BODY_NAME = "tblock"
 BODY_ID = warp.constant(13)
 
