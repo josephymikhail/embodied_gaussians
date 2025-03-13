@@ -2,7 +2,7 @@ import numpy as np
 import warp as wp
 import warp.sim
 
-from embodied_gaussians.utils.physics_utils import transform_from_matrix
+from embodied_gaussians.utils.physics_utils import transform_from_matrix, save_builder, load_builder
 
 
 class ModelBuilder(warp.sim.ModelBuilder):
@@ -48,3 +48,10 @@ class ModelBuilder(warp.sim.ModelBuilder):
             self.body_count, dtype=wp.float32, requires_grad=requires_grad
         )
         return res
+    
+    def save_to_file(self, file_path: str):
+        save_builder(file_path, self)
+    
+    @staticmethod
+    def load_from_file(file_path: str):
+        return load_builder(file_path)

@@ -1,4 +1,3 @@
-import pickle
 import warnings
 from pathlib import Path
 
@@ -6,12 +5,8 @@ import numpy as np
 import warp.sim
 import zarr
 from pydrake.trajectories import PiecewisePolynomial
+from embodied_gaussians.utils.physics_utils import load_builder
 
-
-def load_builder(path: Path | str):
-    with open(path, "rb") as file:
-        loaded_builder = pickle.load(file)
-    return loaded_builder
 
 
 class Loader:

@@ -6,6 +6,10 @@ import numpy as np
 import warp as wp
 import warp.sim
 
+def load_builder(path: Path | str):
+    with open(path, "rb") as file:
+        loaded_builder = pickle.load(file)
+    return loaded_builder
 
 def save_builder(path: Path | str, builder: warp.sim.ModelBuilder):
     for s in builder.shape_geo_src:
