@@ -28,10 +28,6 @@ def read_ground(path: Path) -> np.array:
         ground = json.load(f)
     return np.array(ground["plane"])
 
-def read_pointcloud(path: Path) -> np.ndarray:
-    return np.load(path)
-
-
 class GridBuilder:
     def __init__(self, max_cols: int = 10, spacing=1.0, z=0.0):
         self.max_cols = max_cols

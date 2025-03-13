@@ -54,6 +54,26 @@ To run the included demo:
 pixi r demo
 ```
 
+
+### Scene Building
+To generate an embodied gaussian representation of an object:
+
+1. Run the scene building script:
+```bash
+python scripts/build_simple_body.py objects/tblock.json \
+    --extrinsics examples/embodied_environments/pusht_embodied/environment/sheep.json \
+    --cameras "220422302296" "234222302164" "234222303707" \
+    --visualize
+```
+
+2. For each camera viewpoint, a segmentation GUI will appear. Click on the object you wish to model until satisfied with the selection, then press `Escape`. Repeat this process for all viewpoints.
+
+3. The script will generate a JSON file containing the particle and gaussian representations of your object.
+
+<div align="left">
+    <img src="static/scene_builder_segmentation.png" alt="Segmentation Window" width="640">
+</div>
+
 ## Citation
 
 If you find this work useful, please consider citing our paper:

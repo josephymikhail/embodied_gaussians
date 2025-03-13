@@ -157,6 +157,9 @@ class EmbodiedGaussiansSimulator(Simulator):
             )
 
             loss = torch.nn.functional.mse_loss(render_colors, frames.colors_gpu)
+            # ideas: add a loss that pushes the colors back to their orignal values or to some sort of ema colors
+            # ideas: allow the gaussians to jitter a bit while anchoring them to the original positions
+
             self.visual_forces.zero_grad()
             self.appearance_optimizer.zero_grad()
             loss.backward()
@@ -187,7 +190,7 @@ class EmbodiedGaussiansSimulator(Simulator):
             len(self.visual_forces._start_inds),
             self.visual_forces._total_forces.data_ptr(),
             0,
-        )
+        ) # Replace this with segmented reduce when it is implemented in warp
 
         pysegreduce.reduce_vec3f(
             self.visual_forces.moments.data_ptr(),

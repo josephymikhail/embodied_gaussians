@@ -1,41 +1,57 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+import numpy as np
 
 import tyro
 
-from embodied_gaussians.scene_builders.domain import save_posed_images, load_posed_images
+from embodied_gaussians.scene_builders.domain import save_posed_images, load_posed_images, GaussianLearningRates
 from embodied_gaussians.scene_builders.pointcloud_body_builder import (
     PointCloudBodyBuilder,
     PointCloudBodyBuilderSettings,
 )
-from embodied_gaussians.utils.utils import read_extrinsics, read_pointcloud
+from embodied_gaussians.utils.utils import read_extrinsics
 from utils import get_datapoints_from_live_cameras
 
 
 @dataclass
 class Params:
-    name: str
+    save_path: Path
     extrinsics: Path
     points: Path
+    """
+    Path to a numpy file containing a 3xN array of points
+    """
     max_depth: float = 2.0
     visualize: bool = False
     offline: bool = False
     save_posed_images: bool = True
+    builder: PointCloudBodyBuilderSettings = field(default_factory=PointCloudBodyBuilderSettings(
+        training_learning_rates=GaussianLearningRates(
+            colors=0.1,
+            means=0.0,
+            scales=0.004,
+            quats=0.0,
+        ),
+        min_scale=0.0,
+        max_scale=0.03,
+    ))
 
 
 def main(params: Params):
-    settings = PointCloudBodyBuilderSettings()
-    extrinsics = read_extrinsics(params.extrinsics)
-    points = read_pointcloud(params.points)
-    settings.training_learning_rates.colors = 0.1
-    settings.training_learning_rates.means = 0.0
-    settings.training_learning_rates.scales = 0.004
-    settings.training_learning_rates.quats = 0.0
-    settings.min_scale = 0.0
-    settings.max_scale = 0.03
+    assert params.save_path.suffix == ".json"
+    if params.save_path.exists():
+        overwrite = input(f"File {params.save_path} already exists. Overwrite? (y/n)")
+        if overwrite != "y":
+            print("Aborting.")
+            return
+    else:
+        params.save_path.parent.mkdir(parents=True, exist_ok=True)
 
+    extrinsics = read_extrinsics(params.extrinsics)
+    points = np.load(params.points)
+    serials = ["220422302296", "234222302164", "234222303707"]
     if not params.offline:
-        datapoints = get_datapoints_from_live_cameras(extrinsics)
+        datapoints = get_datapoints_from_live_cameras(extrinsics, serial_numbers=serials)
         if params.save_posed_images:
             save_posed_images(f"data/posed_images/{params.name}.npz", datapoints)
     else:
@@ -46,9 +62,9 @@ def main(params: Params):
             return
 
     result = PointCloudBodyBuilder.build(
-        name=params.name,
+        name=params.save_path.stem,
         points=points,
-        settings=settings,
+        settings=params.builder,
         datapoints=datapoints,
         visualize=params.visualize,
     )
@@ -57,7 +73,7 @@ def main(params: Params):
         print("Body builder failed")
         return
 
-    with open(f"data/objects/{params.name}.json", "w") as f:
+    with open(params.save_path, "w") as f:
         f.write(result.model_dump_json(indent=4))
 
 

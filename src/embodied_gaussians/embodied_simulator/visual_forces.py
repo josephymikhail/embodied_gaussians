@@ -3,7 +3,6 @@ import torch
 import warp as wp
 
 from embodied_gaussians.embodied_simulator.adam import Adam
-from embodied_gaussians.embodied_simulator.appearance_optimizer import AppearanceOptimizer
 from embodied_gaussians.embodied_simulator.gaussians import GaussianModel, GaussianState
 
 
@@ -65,7 +64,6 @@ class VisualForces:
             lrs=[0.01, 0.01],
         )
         self.gaussian_state = gaussian_state
-        self.appearance_optimizer = AppearanceOptimizer(self.gaussian_state)
 
     def set_learnings_rates(self, lrs):
         self.optimizer.lrs = lrs

@@ -54,5 +54,6 @@ class AppearanceOptimizer:
                 ).flatten(),
             ]
         )
-        with torch.no_grad():
-            self.gaussians.scale_log.clamp_(self.inv_min_scale, self.inv_max_scale)
+        if self.optimizer.lrs[2] > 0.0:
+            with torch.no_grad():
+                self.gaussians.scale_log.clamp_(self.inv_min_scale, self.inv_max_scale)
