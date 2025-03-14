@@ -48,6 +48,7 @@ class SimulationViewer(marsoom.Viewer3D):
                 .cpu()
                 .numpy()
             )
+            guizmo.set_id(100)
             c, X_WO = self.manipulate(
                 X_WO, operation=self.manipulate_operation, mode=self.manipulate_mode
             )
