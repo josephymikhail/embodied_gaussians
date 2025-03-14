@@ -248,11 +248,21 @@ class EmbodiedViewer(SimulationViewer):
         imgui.push_style_color(imgui.Col_.button_hovered, (0.3, 0.6, 0.9, 1.0))
         imgui.push_style_color(imgui.Col_.button_active, (0.1, 0.4, 0.7, 1.0))
 
+        if imgui.button("Stash State", (120, 30)):
+            self.env.stash_state()
+        if imgui.is_item_hovered():
+            imgui.set_tooltip("Set the state that will be restored when the scene is reset")
+
         if imgui.button("Reset##reset_scene", (120, 30)):
             self.env.restore_state()
+        if imgui.is_item_hovered():
+            imgui.set_tooltip("Restore the state that was stashed when the scene was reset")
 
         if imgui.button("Save Scene", (120, 30)) and self.env is not None:
             self.save_dialog = pfd.save_file("Save Scene")
+        if imgui.is_item_hovered():
+            imgui.set_tooltip("Save a builder of the current scene to a file")
+
         imgui.pop_style_var(2)
         imgui.pop_style_color(3)
 
