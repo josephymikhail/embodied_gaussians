@@ -131,6 +131,23 @@ class EmbodiedGaussiansEnvironment(Environment):
         self.frames = frames
 
     def save_builder(self, path: Path):
+        b: EmbodiedGaussiansBuilder = self.sim.builder
+        if b.body_count > 0:
+            b.body_q = self.sim.state_0.body_q.numpy().tolist()
+        if b.joint_count > 0:
+            b.joint_q = self.sim.state_0.joint_q.numpy().tolist()
+        if b.particle_count > 0:
+            b.particle_q = self.sim.state_0.particle_q.numpy().tolist()
+        
+        if b.num_gaussians() > 0:
+            with torch.no_grad():
+                # b.gaussian_means = self.sim.gaussian_state.means.cpu().numpy().tolist() # Do not add these to the builder, the builder takes in X_OG, this is X_WG (gaussian relative to the object vs world)
+                # b.gaussian_quats = self.sim.gaussian_state.quats.cpu().numpy().tolist() # Do not add these to the builder
+                b.gaussian_scales = self.sim.gaussian_state.scales.cpu().numpy().tolist()
+                b.gaussian_opacities = self.sim.gaussian_state.opacities.cpu().numpy().tolist()
+                b.gaussian_colors = self.sim.gaussian_state.colors.cpu().numpy().tolist()
+                b.gaussian_body_ids = self.sim.gaussian_model.body_ids.cpu().numpy().tolist()
+
         self.sim.builder.save_to_file(path)
 
     def render_virtual_cameras(self, force: bool = False):
