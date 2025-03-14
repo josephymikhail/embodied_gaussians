@@ -52,10 +52,17 @@ class EmbodiedGaussiansEnvironment(Environment):
         self.visual_forces_settings = VisualForcesSettings()
         self.sim = EmbodiedGaussiansSimulator(builder, device, requires_grad)
         self.control = self.sim.model.control()
-        self.first_state = self.sim.clone_embodied_gaussian_state()
         self.virtual_cameras: VirtualCameras | None = None
         super().__init__()
         self.streams = [torch.cuda.Stream() for _ in range(self.num_envs())]
+        self.stash_state()
+    
+    def stash_state(self):
+        self.stashed_state = self.sim.clone_embodied_gaussian_state()
+
+    def restore_state(self):
+        self.sim.copy_embodied_gaussian_state(self.stashed_state)
+        self.sim.eval_ik()
 
     def add_virtual_cameras(self, cameras: VirtualCameras):
         self.virtual_cameras = cameras
@@ -109,8 +116,7 @@ class EmbodiedGaussiansEnvironment(Environment):
 
     def reset(self):
         self.sim.reset()
-        self.sim.copy_embodied_gaussian_state(self.first_state)
-        self.sim.eval_ik()
+        self.restore_state()
 
     def act(self, actions: EmbodiedGaussiansActions):
         copy_control(self.sim.control, actions.physics_control)

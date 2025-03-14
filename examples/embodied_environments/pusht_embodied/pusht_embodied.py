@@ -72,6 +72,7 @@ def build_environment(num_envs: int = 1, add_gaussians: bool = True):
     warp.to_torch(env.sim.model.gravity_factor).reshape(num_envs, -1)[:, :13] = 0.0
     q_start = torch.from_numpy(Q_START).float()
     env.sim.get_joint_act()[:, :7] = q_start
+    env.stash_state()
     return env
 
 

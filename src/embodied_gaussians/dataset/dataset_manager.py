@@ -67,7 +67,7 @@ class DatasetManager:
         env = EmbodiedGaussiansEnvironment(builder)  # type: ignore
         s = self.physics_loader.get_embodied_gaussian_state_at_index(0)
         env.sim.copy_embodied_gaussian_state(s)
-        env.first_state = env.sim.clone_embodied_gaussian_state()
+        env.stash_state()
         return env
 
     def initialize(self):

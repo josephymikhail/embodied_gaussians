@@ -248,6 +248,9 @@ class EmbodiedViewer(SimulationViewer):
         imgui.push_style_color(imgui.Col_.button_hovered, (0.3, 0.6, 0.9, 1.0))
         imgui.push_style_color(imgui.Col_.button_active, (0.1, 0.4, 0.7, 1.0))
 
+        if imgui.button("Reset##reset_scene", (120, 30)):
+            self.env.restore_state()
+
         if imgui.button("Save Scene", (120, 30)) and self.env is not None:
             self.save_dialog = pfd.save_file("Save Scene")
         imgui.pop_style_var(2)
