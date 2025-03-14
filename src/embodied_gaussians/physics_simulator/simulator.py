@@ -99,6 +99,17 @@ class Simulator:
         joint_start = self.builder.articulation_start[index]
         joint_q = wp.to_torch(self.state_0.joint_q)
         return joint_q[joint_start : joint_start + num_joints]
+    
+    def get_articulation_qd(self, index: int, num_joints: int):
+        assert index < self.builder.articulation_count
+        joint_start = self.builder.articulation_start[index]
+        joint_qd = wp.to_torch(self.state_0.joint_qd)
+        return joint_qd[joint_start : joint_start + num_joints]
+    
+    def check_articulation_healthy(self, index: int):
+        assert index < self.builder.articulation_count
+        joint_qd = wp.to_torch(self.state_0.joint_qd)
+        return torch.isfinite(joint_qd).all()
 
     def set_articulation_q(self, index: int, q: torch.Tensor):
         assert index < self.builder.articulation_count
