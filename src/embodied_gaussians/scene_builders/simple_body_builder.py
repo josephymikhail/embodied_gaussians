@@ -39,7 +39,7 @@ class SimpleBodyBuilderSettings:
 
     training_iterations: int = 1000  # Number of iterations to optimize the particles
     training_learning_rates: GaussianLearningRates = field(default_factory=lambda: GaussianLearningRates(
-        means=0.0005,
+        means=0.0001,
     ))
     opacity_threshold: float = 0.5  # Opacity threshold for optimization
 
@@ -53,6 +53,7 @@ class SimpleBodyBuilderSettings:
         20  # Method removes points that do not have atleast this many neighbors in the radius
     )
     max_depth: float = 2.0
+    cohesion_distance: float = 0.002
 
 
 class SimpleBodyBuilder:
@@ -125,6 +126,7 @@ class SimpleBodyBuilder:
             ground=settings.ground,
             datapoints=datapoints,
             max_depth=settings.max_depth,
+            cohesion_distance=settings.cohesion_distance,
             visualize=visualize,
         )
 
@@ -322,6 +324,7 @@ class SimpleBodyBuilder:
         opacity_threshold: float,
         datapoints: list[MaskedPosedImageAndDepth],
         max_depth: float,
+        cohesion_distance: float = 0.001,
         visualize: bool = False,
     ) -> Particles:
         assert initial_points.shape[1] == 3
@@ -397,7 +400,7 @@ class SimpleBodyBuilder:
                 ground,
                 num_iterations=8,
                 relaxation=0.2,
-                cohesian_distance=0.001,
+                cohesian_distance=cohesion_distance,
             )
 
         if visualize:
