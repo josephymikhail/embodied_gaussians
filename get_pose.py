@@ -3,6 +3,7 @@ import numpy as np
 import pyrealsense2 as rs
 
 # === Checkerboard configuration ===
+#always double check this
 CHECKERBOARD = (6, 8)  # Internal corners (rows, cols)
 SQUARE_SIZE = 0.0296  # meters
 
