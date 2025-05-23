@@ -3,8 +3,8 @@ import numpy as np
 import pyrealsense2 as rs
 
 # === Checkerboard configuration ===
-CHECKERBOARD = (5, 8)  # Internal corners (rows, cols)
-SQUARE_SIZE = 0.03556  # meters
+CHECKERBOARD = (6, 8)  # Internal corners (rows, cols)
+SQUARE_SIZE = 0.0296  # meters
 
 # === Camera intrinsics (from RealSense D435) ===
 fx = 615.6595458984375
@@ -42,13 +42,14 @@ try:
         gray = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
 
         ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, None)
-        cv2.drawChessboardCorners(color_image, CHECKERBOARD, corners, ret)
 
         if ret:
+
+                        
             # Refine the corner locations
             corners2 = cv2.cornerSubPix(
                 gray, corners, (11, 11), (-1, -1),
-                criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+                criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.0001)
             )
 
             # Solve PnP to get camera pose
@@ -61,15 +62,15 @@ try:
                 T[:3, :3] = R
                 T[:3, 3] = tvec.ravel()
 
+                #inverse to get camera pose in checkerboard frame
+                #T = np.linalg.inv(T)
+
                 print("\nCamera pose (4x4) w.r.t. checkerboard (table):")
                 print(T)
 
                 # Draw checkerboard corners on the image
                 cv2.drawChessboardCorners(color_image, CHECKERBOARD, corners2, ret)
 
-
-        if not ret:
-            print('checkerboard not found')
             
         cv2.imshow("RealSense Checkerboard", color_image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
