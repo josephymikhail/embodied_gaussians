@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
+import pyrealsense2 as rs
 
 # === USER INPUTS ===
-image_path = "/home/lab/embodied_gaussians/camera_pose/image_00.png"  # Path to your checkerboard image
 CHECKERBOARD = (8, 6)  # (columns, rows) of inner corners
 square_size = 0.036  # size of one square in meters
 
@@ -30,60 +30,68 @@ objp = np.zeros((CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
 objp[:, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 objp *= square_size
 
-# === LOAD IMAGE AND FIND CORNERS ===
-img = cv2.imread(image_path)
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+pipeline = rs.pipeline()
+config = rs.config()
+config.enable_device('007522062003')
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+pipeline.start(config)
+
+cv2.namedWindow("RealSense Checkerboard", cv2.WINDOW_AUTOSIZE)
+output_freq = 0
+
+try:
+    while True:
+        output_freq += 1
+        frames = pipeline.wait_for_frames()
+        color_frame = frames.get_color_frame()
+        if not color_frame:
+            continue
+
+        color_image = np.asanyarray(color_frame.get_data())
+        gray = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+
+        ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, None)
+
+        if ret:
 
 
-ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, None)
+            # Refine the corner locations
+            corners2 = cv2.cornerSubPix(
+                gray, corners, (11, 11), (-1, -1),
+                criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.0001)
+            )
 
-if not ret:
-    print("Checkerboard not detected.")
-    exit()
+            # Solve PnP to get camera pose
+            success, rvec, tvec = cv2.solvePnP(objp, corners2, camera_matrix, dist_coeffs)
 
-# Refine corner accuracy
-criteria = (cv2.TermCriteria_EPS + cv2.TermCriteria_MAX_ITER, 30, 0.001)
-corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-
-# Draw detected corners
-cv2.drawChessboardCorners(img, CHECKERBOARD, corners2, ret)
-cv2.imshow("Detected Corners", img)
-
-
-
-# === POSE ESTIMATION ===
-success, rvec, tvec = cv2.solvePnP(objp, corners2, camera_matrix, dist_coeffs)
-
-# Convert rvec to rotation matrix
-R, _ = cv2.Rodrigues(rvec)
-
-# === REPROJECTION ERROR ===
-imgpoints2, _ = cv2.projectPoints(objp, rvec, tvec, camera_matrix, dist_coeffs)
-reprojection_error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
-
-'''
-axis = np.float32([[0.1, 0, 0], [0, 0.1, 0], [0, 0, -0.1]])  # X (red), Y (green), Z (blue)
-imgpts, _ = cv2.projectPoints(axis, rvec, tvec, camera_matrix, dist_coeffs)
-corner = tuple(corners2[0].ravel().astype(int))
-img = cv2.line(img, corner, tuple(imgpts[0].ravel().astype(int)), (0, 0, 255), 5)  # X
-img = cv2.line(img, corner, tuple(imgpts[1].ravel().astype(int)), (0, 255, 0), 5)  # Y
-img = cv2.line(img, corner, tuple(imgpts[2].ravel().astype(int)), (255, 0, 0), 5)  # Z
-
-cv2.imshow('Pose Axes', img)
-cv2.waitKey(0)
-'''
+            if success:
+                # Convert to a 4x4 homogeneous transformation matrix
+                R, _ = cv2.Rodrigues(rvec)
+                T = np.eye(4)
+                T[:3, :3] = R
+                # Convert to inches for better intuition
+                #T[:3, 3] = tvec.ravel() * 39.3701
+                T[:3, 3] = tvec.ravel()
+                inv_T = np.linalg.inv(T)
 
 
+                if output_freq % 150 == 0:
+                    print(T)
 
-cv2.destroyAllWindows()
+                # Draw checkerboard corners on the image
+                cv2.drawChessboardCorners(color_image, CHECKERBOARD, corners2, ret)
 
-# === PRINT RESULTS ===
-print("\n=== POSE ESTIMATION RESULTS ===")
-print("Rotation Matrix (R):\n", R)
-print("Translation Vector (inches):\n", tvec * 39.3701)
-print("Reprojection Error (pixels): {:.4f}".format(reprojection_error))
-
+                # === REPROJECTION ERROR ===
+                imgpoints2, _ = cv2.projectPoints(objp, rvec, tvec, camera_matrix, dist_coeffs)
+                reprojection_error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
 
 
+        cv2.imshow("RealSense Checkerboard", color_image)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+finally:
+    pipeline.stop()
+    cv2.destroyAllWindows()
 
 #standing behind the camera: pos x axis is to the right, pos y axis is down, pos z axis is forward
