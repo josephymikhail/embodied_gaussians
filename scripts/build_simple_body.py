@@ -67,7 +67,7 @@ def main(params: Params):
 
     extrinsics = read_extrinsics(params.extrinsics)
     if not params.offline:
-        breakpoint()
+        #breakpoint()
         datapoints = get_datapoints_from_live_cameras(
             extrinsics
         )

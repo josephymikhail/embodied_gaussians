@@ -39,7 +39,7 @@ class SimpleBodyBuilderSettings:
         0.006  # Radius of particles in the resulting body. Choose a radius that represents the minimum geometric feature you want to capture
     )
 
-    training_iterations: int = 1000  # Number of iterations to optimize the particles
+    training_iterations: int = 500#1000  # Number of iterations to optimize the particles
     training_learning_rates: GaussianLearningRates = field(default_factory=lambda: GaussianLearningRates(
         means=0.0001,
     ))
@@ -52,7 +52,7 @@ class SimpleBodyBuilderSettings:
         0.01  # Method removes points that do not have enough neighbors within this radius
     )
     outlier_nb_points: int = (
-        20  # Method removes points that do not have atleast this many neighbors in the radius
+        10#20  # Method removes points that do not have atleast this many neighbors in the radius
     )
     max_depth: float = 2.0
     cohesion_distance: float = 0.002
@@ -73,11 +73,14 @@ class SimpleBodyBuilder:
         # https://openreview.net/pdf?id=AEq0onGrN2 (Figure 2)
 
         # ================= Step 1: Merge all datapoints into a single pointcloud =================
+
         pc = SimpleBodyBuilder._merge_into_pointcloud(datapoints, settings.max_depth)
         if pc is None:
+            print("No pointcloud created from the datapoints")
             return None
 
         # ================ Step 2: Get the bounding box of the pointcloud =================
+
         obb = SimpleBodyBuilder._filter_and_get_bounding_box(
             pc, settings.outlier_radius, settings.outlier_nb_points
         )
@@ -91,6 +94,7 @@ class SimpleBodyBuilder:
         )
 
         # ================ Step 4: Prune points not in masks =================
+
         mask = SimpleBodyBuilder._prune_points_not_in_masks(sphere_means, datapoints)
         sphere_means = sphere_means[mask]
         if sphere_means.shape[0] == 0:
@@ -98,6 +102,7 @@ class SimpleBodyBuilder:
             return None
 
         # ================ Step 5: Prune points below ground =================
+
         if settings.ground is not None:
             sphere_means = SimpleBodyBuilder._prune_points_below_ground(
                 sphere_means, settings.ground
@@ -236,6 +241,10 @@ class SimpleBodyBuilder:
                     depth_scale=1.0 / datapoint.depth_scale,
                     depth_trunc=max_depth,
                 )
+
+            #X_CW = datapoint.X_WC
+            #X_WC = np.linalg.inv(X_CW)
+
             X_WC = datapoint.X_WC @ np.array(
                 [[1, 0, 0, 0.0], [0, -1, 0, 0.0], [0, 0, -1, 0.0], [0.0, 0.0, 0.0, 1.0]]
             )  # rotate areound x axis to make it in opencv standard
@@ -249,6 +258,8 @@ class SimpleBodyBuilder:
         if len(final_pointcloud.points) == 0:
             logger.warning("The pointcloud is empty")
             return None
+        
+        
 
         return final_pointcloud
 
@@ -335,8 +346,8 @@ class SimpleBodyBuilder:
         params = SimpleBodyBuilder._create_initial_gaussian_state(
             initial_points, radius
         )
-
         gt_data = SimpleBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth)
+
         optimizers = SimpleBodyBuilder._create_optimizers_for_params(
             params,
             {
@@ -616,6 +627,9 @@ class SimpleBodyBuilder:
             # image = torch.from_numpy(datapoint.mask).float().cuda().unsqueeze(-1).repeat(1, 1, 3)
             mask = torch.from_numpy(datapoint.mask).cuda()
             masks.append(mask)
+
+            #breakpoint()
+            #print("Image shape:", datapoint.image.shape)
 
             image = torch.from_numpy(datapoint.image).float().cuda() / 255.0
             image[datapoint.mask == 0, :] = 0.0

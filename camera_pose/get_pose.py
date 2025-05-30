@@ -8,7 +8,7 @@ import os
 CHECKERBOARD = (8, 6)  # (columns, rows) of inner corners
 square_size = 0.036  # size of one square in meters
 
-# intrinsic parameters 
+
 #from real sense for 007522062003
 #fx = 607.841552734375
 #fy = 606.5180053710938
@@ -16,23 +16,43 @@ square_size = 0.036  # size of one square in meters
 #cy = 237.56298828125
 
 #realsense values for 827112070893
-fx = 615.6595458984375
-fy = 615.6107788085938
-cx = 321.5747375488281
-cy = 236.33041381835938
+#fx = 615.6595458984375
+#fy = 615.6107788085938
+#cx = 321.5747375488281
+#cy = 236.33041381835938
+
+#realsense values for 327122076541
+#fx = 604.9152221679688
+#fy = 604.6057739257812
+#cx = 328.6421203613281
+#cy = 255.98118591308594
 
 
-#manual calibration values for 007522062003
+#manual calibration values for 827112070893
+fx = 554.637
+fy = 594.6277
+cx = 354.3337
+cy = 329.573
+dist_coeffs = np.array([4.406e-02, 3.3612e-01, 4.5784e-04, 3.164e-02, -5.6377e-01])
+
+#old manual calibration values for 007522062003
 #fx = 538.3586
 #fy = 546.76
 #cx = 281.4157
 #cy = 277.938
 #dist_coeffs = np.array([0.2514, -0.78757, 0.01096, -0.02877, 0.43484])
 
+#new manual values for 007522062003
+#fx = 614.559
+#fy = 617.694
+#cx = 319.9279
+#cy = 218.358
+#dist_coeffs = np.array([3.715e-02, 9.0511e-01, -1.247e-02, 1.9958e-03, -4.083e0])
+
 camera_matrix = np.array([[fx, 0, cx],
                           [0, fy, cy],
                           [0,  0,  1]])
-dist_coeffs = np.array([0,0,0,0])
+#dist_coeffs = np.array([0,0,0,0])
 
 # === PREPARE OBJECT POINTS ===
 objp = np.zeros((CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
@@ -44,7 +64,8 @@ config = rs.config()
 #breakpoint()
 #007522062003
 #827112070893
-serial_number = '007522062003'
+#327122076541
+serial_number = '827112070893'
 config.enable_device(serial_number)
 config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 pipeline.start(config)
@@ -85,11 +106,20 @@ try:
                 # Convert to inches for better intuition
                 #T[:3, 3] = tvec.ravel() * 39.3701
                 T[:3, 3] = tvec.ravel()
-                inv_T = np.linalg.inv(T)
+                #inv_T = np.linalg.inv(T)
+                #T = np.linalg.inv(T)
 
+                #look more into this
+                opencv_to_blender = np.array([
+                    [1,  0,  0,  0],
+                    [0,  1,  0,  0],
+                    [0,  0,  1,  0],
+                    [0,  0,  0,  1]
+                ])
+                T = np.linalg.inv(T)
+                T = T @ opencv_to_blender
 
-                if output_freq % 150 == 0:
-                    print(T)
+                
 
                 # Draw checkerboard corners on the image
                 cv2.drawChessboardCorners(color_image, CHECKERBOARD, corners2, ret)
@@ -97,6 +127,11 @@ try:
                 # === REPROJECTION ERROR ===
                 imgpoints2, _ = cv2.projectPoints(objp, rvec, tvec, camera_matrix, dist_coeffs)
                 reprojection_error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+
+                if output_freq % 150 == 0:
+                        print(T)
+                        print(reprojection_error)
+
 
 
         cv2.imshow("RealSense Checkerboard", color_image)

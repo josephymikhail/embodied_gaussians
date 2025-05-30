@@ -8,6 +8,8 @@ SAVE_DIR = "/home/lab/embodied_gaussians/camera_pose/get_intrinsics"
 
 pipeline = rs.pipeline()
 config = rs.config()
+#827112070893
+#007522062003
 config.enable_device('007522062003')
 config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 pipeline.start(config)
